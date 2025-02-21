@@ -40,20 +40,24 @@ def init_gspread():
 # Call init_gspread() at startup
 init_gspread()
 
-@app.route('/')
-def home():
-    return "Hello from Replit Slack Bot!"
-
 @app.route('/slack/events', methods=['POST'])
 def slack_events():
-    data = request.get_json()
+    # Ensure Slack sends JSON properly
+    if request.content_type != "application/json":
+        return make_response("Invalid content type", 415)
+
+    form_data = request.get_json()
+    if not form_data:
+        return make_response("Invalid JSON payload", 400)
 
     # Handle Slack's URL verification challenge
-    if data and "type" in data and data["type"] == "url_verification":
+    if "challenge" in form_data:
         print("DEBUG: Received Slack URL verification request")
-        return make_response(data["challenge"], 200)
+        return jsonify({"challenge": form_data["challenge"]})
 
-    form_data = request.form
+    event = form_data.get("event", {})
+    
+    # Process Slack commands
     command = form_data.get('command')
     text = form_data.get('text', '')
     user_id = form_data.get('user_id')
