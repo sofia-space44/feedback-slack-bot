@@ -42,28 +42,31 @@ init_gspread()
 
 @app.route('/slack/events', methods=['POST'])
 def slack_events():
-    # Ensure Slack sends JSON properly
-    if request.content_type != "application/json":
-        return make_response("Invalid content type", 415)
+    # Print raw request data to debug
+    print("DEBUG: Raw request received:", request.data)
 
-    form_data = request.get_json()
-    if not form_data:
-        return make_response("Invalid JSON payload", 400)
+    # Step 1: Check Content-Type and parse accordingly
+    if request.content_type == "application/json":
+        data = request.get_json()
+    elif request.content_type == "application/x-www-form-urlencoded":
+        data = request.form.to_dict()
+    else:
+        return make_response("Unsupported content type", 415)
 
-    # Handle Slack's URL verification challenge
-    if "challenge" in form_data:
-        print("DEBUG: Received Slack URL verification request")
-        return jsonify({"challenge": form_data["challenge"]})
+    print("DEBUG: Parsed request data:", json.dumps(data, indent=2))
 
-    event = form_data.get("event", {})
-    
-    # Process Slack commands
-    command = form_data.get('command')
-    text = form_data.get('text', '')
-    user_id = form_data.get('user_id')
-    channel_id = form_data.get('channel_id')
+    # Step 2: Handle Slack URL verification challenge
+    if "challenge" in data:
+        print("DEBUG: Handling Slack verification challenge")
+        return make_response(json.dumps({"challenge": data["challenge"]}), 200, {"Content-Type": "application/json"})
 
-    print(f"DEBUG: slack_events received command={command}, text={text}, user_id={user_id}, channel_id={channel_id}")
+    # Step 3: Process Slack Commands
+    command = data.get('command')
+    text = data.get('text', '')
+    user_id = data.get('user_id')
+    channel_id = data.get('channel_id')
+
+    print(f"DEBUG: Received Slack command={command}, text={text}, user_id={user_id}, channel_id={channel_id}")
 
     if command == '/mypraise':
         return handle_mypraise(user_id, text)
@@ -74,9 +77,7 @@ def slack_events():
     elif command == '/mynotez':
         return handle_mynotez(channel_id, text)
 
-    else:
-        return make_response("Unknown command", 200)
-
+    return make_response("Unknown command", 200)
 
 def handle_mytest(text):
     print("DEBUG: handle_mytest called with text=", text)
