@@ -46,6 +46,13 @@ def home():
 
 @app.route('/slack/events', methods=['POST'])
 def slack_events():
+    data = request.get_json()
+
+    # Handle Slack's URL verification challenge
+    if data and "type" in data and data["type"] == "url_verification":
+        print("DEBUG: Received Slack URL verification request")
+        return make_response(data["challenge"], 200)
+
     form_data = request.form
     command = form_data.get('command')
     text = form_data.get('text', '')
@@ -54,10 +61,7 @@ def slack_events():
 
     print(f"DEBUG: slack_events received command={command}, text={text}, user_id={user_id}, channel_id={channel_id}")
 
-    if command == '/mytest':
-        return handle_mytest(text)
-
-    elif command == '/mypraise':
+    if command == '/mypraise':
         return handle_mypraise(user_id, text)
 
     elif command == '/myfeedback':
@@ -68,6 +72,7 @@ def slack_events():
 
     else:
         return make_response("Unknown command", 200)
+
 
 def handle_mytest(text):
     print("DEBUG: handle_mytest called with text=", text)
