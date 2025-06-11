@@ -342,6 +342,9 @@ def store_in_sheet(row_data):
     if worksheet is None:
         print("DEBUG: worksheet is None, can't store data.")
         return
+    from datetime import datetime
+    timestamp = datetime.utcnow().isoformat()
+    row_data.append(timestamp)
     worksheet.append_row(row_data)
 
 if __name__ == "__main__":
